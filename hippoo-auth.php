@@ -18,7 +18,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'HIPPOO_AUTH_VERSION', '1.0.3' );
+define( 'HIPPOO_AUTH_VERSION', '1.0.4' );
 define( 'HIPPOO_AUTH_PATH', plugin_dir_path( __FILE__ ) );
 define( 'HIPPOO_AUTH_URL', plugin_dir_url( __FILE__ ) );
 

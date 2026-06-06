@@ -1,0 +1,27 @@
+.social-login-container {
+    max-width: 400px;
+    margin: 50px auto;
+}
+.social-btn {
+    display: block;
+    width: 100%;
+    padding: 15px;
+    margin: 10px 0;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+#google-login {
+    background-color: #DB4437;
+}
+#facebook-login {
+    background-color: #4267B2;
+}
+#apple-login {
+    background-color: #000000;
+}
+.user-info {
+    margin-top: 20px;
+    padding: 15px;
+    display: none;
+}

@@ -3,7 +3,7 @@
  * Plugin Name: Hippoo Auth
  * Plugin URI: https://Hippoo.app
  * Description: REST API-based authentication system with JWT and social login.
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Hippoo team
  * Author URI: https://Hippoo.app
  * Text Domain: hippoo-auth

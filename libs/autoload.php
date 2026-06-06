@@ -6,9 +6,7 @@ $hippoo_auth_prefixes = array(
     'Firebase\\JWT\\' => HIPPOO_AUTH_PATH . '/libs/php-jwt/src/',
 );
 
-spl_autoload_register( function ( $class ) {
-    global $hippoo_auth_prefixes;
-    
+spl_autoload_register( function ( $class ) use ( $hippoo_auth_prefixes ) {
     foreach ( $hippoo_auth_prefixes as $prefix => $base_dir ) {
         $len = strlen( $prefix );
         if ( strncmp( $prefix, $class, $len ) === 0 ) {

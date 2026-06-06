@@ -77,14 +77,14 @@ These are required for enabling social login functionality.
 
 == Changelog ==
 
-= 1.0.0 =
-* Initial release.
+= 1.0.3 =
+* Maintenance Release
 
 = 1.0.1 =
 * Minor bug fix.
 
-= 1.0.3 =
-* Maintenance Release
+= 1.0.0 =
+* Initial release.
 
 == Credits ==
 

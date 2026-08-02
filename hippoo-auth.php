@@ -3,7 +3,7 @@
  * Plugin Name: Hippoo Auth
  * Plugin URI: https://Hippoo.app
  * Description: REST API-based authentication system with JWT and social login.
- * Version: 1.0.4
+ * Version: 1.1.0
  * Author: Hippoo team
  * Author URI: https://Hippoo.app
  * Text Domain: hippoo-auth
@@ -18,7 +18,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'HIPPOO_AUTH_VERSION', '1.0.4' );
+define( 'HIPPOO_AUTH_VERSION', '1.1.0' );
 define( 'HIPPOO_AUTH_PATH', plugin_dir_path( __FILE__ ) );
 define( 'HIPPOO_AUTH_URL', plugin_dir_url( __FILE__ ) );
 

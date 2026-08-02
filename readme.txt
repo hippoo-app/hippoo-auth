@@ -78,7 +78,7 @@ These are required for enabling social login functionality.
 == Changelog ==
 
 = 1.0.4 =
-* Minor bug fixesx
+* Fix `Invalid argument supplied for foreach()` warning in autoload — capture prefixes via closure `use()` instead of relying on `global` (the array sits in plugin-file scope, not global scope).
 
 = 1.0.3 =
 * Maintenance Release

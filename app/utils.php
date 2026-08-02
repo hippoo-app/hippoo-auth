@@ -36,7 +36,17 @@ function hippoo_auth_validate_access_token( $token ) {
         $key = ! empty( $options['jwt_secret_key'] ) ? $options['jwt_secret_key'] : 'hippoo-auth-jwt-super-secret-key';
 
         $decoded = JWT::decode( $token, new Key( $key, 'HS256' ) );
+
+        if ( empty( $decoded->user_id ) ) {
+            return false;
+        }
+
         $user = get_user_by( 'id', $decoded->user_id );
+
+        if ( ! $user instanceof WP_User ) {
+            return false;
+        }
+
         $saved_token = get_user_meta( $user->ID, 'hippoo_auth_access_token', true );
 
         if ( $saved_token !== $token ) {
@@ -44,7 +54,8 @@ function hippoo_auth_validate_access_token( $token ) {
         }
 
         return $user;
-    } catch ( Exception $e ) {
+    } catch ( \Throwable $e ) {
+        error_log( '[hippoo-auth] access token validation failed: ' . $e->getMessage() );
         return false;
     }
 }
@@ -80,12 +91,21 @@ function hippoo_auth_validate_refresh_token( $token ) {
         $key = ! empty( $options['jwt_secret_key'] ) ? $options['jwt_secret_key'] : 'hippoo-auth-jwt-super-secret-key';
 
         $decoded = JWT::decode( $token, new Key( $key, 'HS256' ) );
-        
+
         if ( ! isset( $decoded->type ) || $decoded->type !== 'refresh' ) {
             return false;
         }
 
+        if ( empty( $decoded->user_id ) ) {
+            return false;
+        }
+
         $user = get_user_by( 'id', $decoded->user_id );
+
+        if ( ! $user instanceof WP_User ) {
+            return false;
+        }
+
         $saved_token = get_user_meta( $user->ID, 'hippoo_auth_refresh_token', true );
 
         if ( $saved_token !== $token ) {
@@ -93,7 +113,8 @@ function hippoo_auth_validate_refresh_token( $token ) {
         }
 
         return $user;
-    } catch (Exception $e) {
+    } catch ( \Throwable $e ) {
+        error_log( '[hippoo-auth] refresh token validation failed: ' . $e->getMessage() );
         return false;
     }
 }
@@ -228,8 +249,8 @@ function hippoo_auth_verify_apple_token( $token ) {
     }
 
     try {
-        $decoded = JWT::decode( $token, $public_key_pem );
-    } catch ( Exception $e ) {
+        $decoded = JWT::decode( $token, new Key( $public_key_pem, 'RS256' ) );
+    } catch ( \Throwable $e ) {
         return new WP_Error( 'jwt_decode_error', 'Apple token decode failed: ' . $e->getMessage(), [ 'status' => 401 ] );
     }
 

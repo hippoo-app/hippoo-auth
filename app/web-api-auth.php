@@ -38,16 +38,19 @@ function hippoo_auth_permission_check( $request ) {
     $headers = getallheaders();
     $auth_header = $headers['Authorization'] ?? $headers['authorization'] ?? '';
 
-    if ( strpos( $auth_header, 'Bearer ' ) === 0 ) {
-        $token = str_replace( 'Bearer ', '', $auth_header );
-        $user = hippoo_auth_validate_access_token( $token );
-        if ( $user ) {
-            hippoo_auth_authenticate_user( $user );
-            return true;
-        }
+    if ( strpos( $auth_header, 'Bearer ' ) !== 0 ) {
+        return new WP_Error( 'unauthorized', 'You must be logged in to get results', [ 'status' => 401 ] );
     }
 
-    return new WP_Error( 'unauthorized', 'You must be logged in to get results', [ 'status' => 401 ] );
+    $token = substr( $auth_header, 7 );
+    $user  = hippoo_auth_validate_access_token( $token );
+
+    if ( ! $user instanceof WP_User ) {
+        return new WP_Error( 'unauthorized', 'You must be logged in to get results', [ 'status' => 401 ] );
+    }
+
+    wp_set_current_user( $user->ID );
+    return true;
 }
 
 function hippoo_auth_get_user_orders( $request ) {

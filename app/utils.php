@@ -6,10 +6,30 @@ use \Firebase\JWT\JWK;
 use \Firebase\JWT\JWT;
 use \Firebase\JWT\Key;
 
+function hippoo_auth_get_signing_key() {
+    $options = get_option( 'hippoo_auth_settings', [] );
+    $key = isset( $options['jwt_secret_key'] ) ? (string) $options['jwt_secret_key'] : '';
+    return $key === '' ? false : $key;
+}
+
+function hippoo_auth_decode_jwt( $token ) {
+    $options = get_option( 'hippoo_auth_settings', [] );
+    $current = isset( $options['jwt_secret_key'] ) ? (string) $options['jwt_secret_key'] : '';
+
+    if ( $current === '' ) {
+        throw new \RuntimeException( 'hippoo_auth: jwt_secret_key not configured' );
+    }
+
+    return JWT::decode( $token, new Key( $current, 'HS256' ) );
+}
+
 function hippoo_auth_generate_access_token( $user_id ) {
     try {
-        $options = get_option( 'hippoo_auth_settings' );
-        $key = ! empty( $options['jwt_secret_key'] ) ? $options['jwt_secret_key'] : 'hippoo-auth-jwt-super-secret-key';
+        $key = hippoo_auth_get_signing_key();
+        if ( $key === false ) {
+            error_log( '[hippoo-auth] cannot issue access token: jwt_secret_key not configured' );
+            return false;
+        }
 
         $issued_at = time();
         $exp = apply_filters( 'hippoo_auth_access_token_expiry', DAY_IN_SECONDS * 7 );
@@ -21,21 +41,19 @@ function hippoo_auth_generate_access_token( $user_id ) {
         );
 
         $token = JWT::encode( $payload, $key, 'HS256' );
-        
+
         update_user_meta( $user_id, 'hippoo_auth_access_token', $token );
 
         return $token;
-    } catch ( Exception $e ) {
+    } catch ( \Throwable $e ) {
+        error_log( '[hippoo-auth] access token generation failed: ' . $e->getMessage() );
         return false;
     }
 }
 
 function hippoo_auth_validate_access_token( $token ) {
     try {
-        $options = get_option( 'hippoo_auth_settings' );
-        $key = ! empty( $options['jwt_secret_key'] ) ? $options['jwt_secret_key'] : 'hippoo-auth-jwt-super-secret-key';
-
-        $decoded = JWT::decode( $token, new Key( $key, 'HS256' ) );
+        $decoded = hippoo_auth_decode_jwt( $token );
 
         if ( empty( $decoded->user_id ) ) {
             return false;
@@ -62,8 +80,11 @@ function hippoo_auth_validate_access_token( $token ) {
 
 function hippoo_auth_generate_refresh_token( $user_id ) {
     try {
-        $options = get_option( 'hippoo_auth_settings' );
-        $key = ! empty( $options['jwt_secret_key'] ) ? $options['jwt_secret_key'] : 'hippoo-auth-jwt-super-secret-key';
+        $key = hippoo_auth_get_signing_key();
+        if ( $key === false ) {
+            error_log( '[hippoo-auth] cannot issue refresh token: jwt_secret_key not configured' );
+            return false;
+        }
 
         $issued_at = time();
         $exp = apply_filters( 'hippoo_auth_refresh_token_expiry', YEAR_IN_SECONDS );
@@ -76,21 +97,19 @@ function hippoo_auth_generate_refresh_token( $user_id ) {
         );
 
         $token = JWT::encode( $payload, $key, 'HS256' );
-        
+
         update_user_meta( $user_id, 'hippoo_auth_refresh_token', $token );
 
         return $token;
-    } catch (Exception $e) {
+    } catch ( \Throwable $e ) {
+        error_log( '[hippoo-auth] refresh token generation failed: ' . $e->getMessage() );
         return false;
     }
 }
 
 function hippoo_auth_validate_refresh_token( $token ) {
     try {
-        $options = get_option( 'hippoo_auth_settings' );
-        $key = ! empty( $options['jwt_secret_key'] ) ? $options['jwt_secret_key'] : 'hippoo-auth-jwt-super-secret-key';
-
-        $decoded = JWT::decode( $token, new Key( $key, 'HS256' ) );
+        $decoded = hippoo_auth_decode_jwt( $token );
 
         if ( ! isset( $decoded->type ) || $decoded->type !== 'refresh' ) {
             return false;
@@ -154,7 +173,7 @@ function hippoo_auth_find_or_create_user( $user_data, $role = 'customer' ) {
 
         if ( isset( $user_data['provider'] ) ) {
             update_user_meta( $user_id, 'hippoo_auth_provider', $user_data['provider'] );
-            
+
             if ( function_exists( 'wc_get_customer' ) ) {
                 $customer = wc_get_customer( $user_id );
                 if ( $customer ) {
@@ -168,19 +187,38 @@ function hippoo_auth_find_or_create_user( $user_data, $role = 'customer' ) {
     return $user;
 }
 
+function hippoo_auth_is_valid_jwt( $token ) {
+    $parts = explode( '.', $token );
+    if ( count( $parts ) !== 3 ) {
+        return false;
+    }
+
+    foreach ( $parts as $part ) {
+        if ( ! preg_match( '/^[a-zA-Z0-9_-]+$/', $part ) ) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 function hippoo_auth_verify_google_token( $token ) {
-    $response = wp_remote_get( 'https://www.googleapis.com/oauth2/v2/userinfo?access_token=' . urlencode( $token ) );
-    
+    if( hippoo_auth_is_valid_jwt( $token ) ) {
+        $response = wp_remote_get( 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode( $token ) );
+    } else {
+        $response = wp_remote_get( 'https://www.googleapis.com/oauth2/v2/userinfo?access_token=' . urlencode( $token ) );
+    }
+
     if ( is_wp_error( $response ) ) {
         return new WP_Error( 'google_api_error', 'Failed to verify Google token', [ 'status' => 401 ] );
     }
-    
+
     $body = json_decode( wp_remote_retrieve_body( $response ), true );
-    
+
     if ( isset( $body['error'] ) || ! isset( $body['email'] )) {
         return new WP_Error( 'invalid_token', $body['error']['message'] ?? 'Google token verification failed', [ 'status' => 401 ] );
     }
-    
+
     return array(
         'email' => $body['email'],
         'name' => $body['name'],

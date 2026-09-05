@@ -5,7 +5,7 @@ Donate link: https://hippoo.app/
 Tags: WooCommerce, REST API, Social Login, Headless WooCommerce, JWT, WooCommerce API  
 Requires at least: 5.8  
 Tested up to: 6.8  
-Stable tag: 1.0.3
+Stable tag: 1.1.1
 Text Domain: hippoo-auth  
 License: GPLv3  
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -76,6 +76,17 @@ These are required for enabling social login functionality.
 **A:** Yes. It’s designed specifically to enable secure access to WooCommerce data through custom APIs.
 
 == Changelog ==
+
+= 1.1.1 =
+* Improved token signing key handling.
+
+= 1.1.0 =
+* Stateless REST auth: `hippoo_auth_permission_check` no longer sets WordPress/WooCommerce session cookies on every authenticated call. The permission callback now uses `wp_set_current_user()` for the current request only. Fixes intermittent `502 Bad Gateway` responses on authenticated routes caused by response headers overflowing nginx's default FastCGI buffer.
+* JWT token validation (`hippoo_auth_validate_access_token`, `hippoo_auth_validate_refresh_token`) now catches `\Throwable` (not just `\Exception`) so `TypeError`/`Error` from the JWT library surface as clean 401 responses instead of PHP fatals. Added `user_id` and `WP_User` guards to eliminate a latent "property of non-object" notice.
+* Fixed Apple social-login JWT decode: `hippoo_auth_verify_apple_token` now wraps the parsed public key in `new Key( $pem, 'RS256' )` as required by firebase/php-jwt v6+ (was using the v5 signature and throwing an uncaught `TypeError`).
+
+= 1.0.4 =
+* Fix `Invalid argument supplied for foreach()` warning in autoload — capture prefixes via closure `use()` instead of relying on `global` (the array sits in plugin-file scope, not global scope).
 
 = 1.0.3 =
 * Maintenance Release

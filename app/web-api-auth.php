@@ -32,6 +32,30 @@ add_action( 'rest_api_init', function () {
         'callback' => 'hippoo_auth_get_settings',
         'permission_callback' => 'hippoo_auth_permission_check',
     ) );
+
+    register_rest_route( 'hippoo-auth/v1', 'connections', array(
+        'methods'             => 'GET',
+        'callback'            => 'hippoo_auth_get_connections',
+        'permission_callback' => 'hippoo_auth_permission_check',
+    ) );
+
+    register_rest_route( 'hippoo-auth/v1', 'connections', array(
+        'methods'             => 'POST',
+        'callback'            => 'hippoo_auth_add_connection',
+        'permission_callback' => 'hippoo_auth_permission_check',
+    ) );
+
+    register_rest_route( 'hippoo-auth/v1', 'connections/(?P<id>[\w-]+)', array(
+        'methods'             => 'DELETE',
+        'callback'            => 'hippoo_auth_delete_connection',
+        'permission_callback' => 'hippoo_auth_permission_check',
+    ) );
+
+    register_rest_route( 'hippoo-auth/v1', 'connections', array(
+        'methods'             => 'DELETE',
+        'callback'            => 'hippoo_auth_delete_all_connections',
+        'permission_callback' => 'hippoo_auth_permission_check',
+    ) );
 } );
 
 function hippoo_auth_permission_check( $request ) {
@@ -154,4 +178,77 @@ function hippoo_auth_get_settings( $request ) {
         'apple_service_id' => $options['apple_service_id'] ?? '',
     );
     return new WP_REST_Response( $response, 200 );
+}
+
+function hippoo_auth_get_connections( $request ) {
+    $user_id     = get_current_user_id();
+    $connections = get_user_meta( $user_id, 'hippoo_auth_connections', true );
+    $connections = is_array( $connections ) ? $connections : [];
+
+    $response = [];
+    foreach ( $connections as $conn ) {
+        $response[] = [
+            'id'   => $conn['id'],
+            'data' => $conn['data'],
+        ];
+    }
+
+    return new WP_REST_Response( $response, 200 );
+}
+
+function hippoo_auth_add_connection( $request ) {
+    $user_id = get_current_user_id();
+    $data    = $request->get_param( 'data' );
+
+    if ( empty( $data ) || ! is_string( $data ) ) {
+        return new WP_Error( 'missing_fields', 'Encrypted data is required', [ 'status' => 400 ] );
+    }
+
+    $connections = get_user_meta( $user_id, 'hippoo_auth_connections', true );
+    $connections = is_array( $connections ) ? $connections : [];
+
+    $new_connection = [
+        'id'   => uniqid(),
+        'data' => sanitize_textarea_field( $data ),
+    ];
+
+    $connections[] = $new_connection;
+    update_user_meta( $user_id, 'hippoo_auth_connections', $connections );
+
+    return new WP_REST_Response( [
+        'id'      => $new_connection['id'],
+        'data'    => $new_connection['data'],
+    ], 200 );
+}
+
+function hippoo_auth_delete_connection( $request ) {
+    $user_id       = get_current_user_id();
+    $connection_id = $request->get_param( 'id' );
+
+    $connections = get_user_meta( $user_id, 'hippoo_auth_connections', true );
+    $connections = is_array( $connections ) ? $connections : [];
+
+    $found = false;
+    foreach ( $connections as $key => $conn ) {
+        if ( isset( $conn['id'] ) && $conn['id'] === $connection_id ) {
+            unset( $connections[ $key ] );
+            $found = true;
+            break;
+        }
+    }
+
+    if ( ! $found ) {
+        return new WP_Error( 'not_found', 'Connection not found', [ 'status' => 404 ] );
+    }
+
+    update_user_meta( $user_id, 'hippoo_auth_connections', array_values( $connections ) );
+
+    return new WP_REST_Response( 'Connection deleted', 200 );
+}
+
+function hippoo_auth_delete_all_connections( $request ) {
+    $user_id = get_current_user_id();
+    delete_user_meta( $user_id, 'hippoo_auth_connections' );
+
+    return new WP_REST_Response( 'All connections deleted', 200 );
 }

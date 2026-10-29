@@ -3,7 +3,7 @@
  * Plugin Name: Hippoo Auth
  * Plugin URI: https://Hippoo.app
  * Description: REST API-based authentication system with JWT and social login.
- * Version: 1.1.1
+ * Version: 1.1.2
  * Author: Hippoo team
  * Author URI: https://Hippoo.app
  * Text Domain: hippoo-auth
@@ -12,15 +12,21 @@
  * Tested up to: 6.8
  * Requires PHP: 7.4
  * WC requires at least: 5.0
- * WC tested up to: 9.8
+ * WC tested up to: 10.8
  * Requires Plugins: woocommerce
  **/
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'HIPPOO_AUTH_VERSION', '1.1.1' );
+define( 'HIPPOO_AUTH_VERSION', '1.1.2' );
 define( 'HIPPOO_AUTH_PATH', plugin_dir_path( __FILE__ ) );
 define( 'HIPPOO_AUTH_URL', plugin_dir_url( __FILE__ ) );
+
+add_action( 'before_woocommerce_init', function() {
+    if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+        \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', __FILE__, true );
+    }
+} );
 
 require_once HIPPOO_AUTH_PATH . 'libs/autoload.php';
 require_once HIPPOO_AUTH_PATH . 'app/utils.php';

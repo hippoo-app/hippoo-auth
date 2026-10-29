@@ -5,7 +5,7 @@ Donate link: https://hippoo.app/
 Tags: WooCommerce, REST API, Social Login, Headless WooCommerce, JWT, WooCommerce API  
 Requires at least: 5.8  
 Tested up to: 6.8  
-Stable tag: 1.1.1
+Stable tag: 1.1.2
 Text Domain: hippoo-auth  
 License: GPLv3  
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -76,6 +76,10 @@ These are required for enabling social login functionality.
 **A:** Yes. It’s designed specifically to enable secure access to WooCommerce data through custom APIs.
 
 == Changelog ==
+
+= 1.1.2 =
+* Restored the `/hippoo-auth/v1/connections` REST endpoints (GET list, POST add, DELETE by id, DELETE all) that were missing from the 1.1.x releases and returned 404 to the Hippoo app. They are authenticated and store each user's encrypted connection data in user meta.
+* Declared compatibility with WooCommerce High-Performance Order Storage (custom order tables). Updated "WC tested up to" to 10.8.
 
 = 1.1.1 =
 * Improved token signing key handling.
